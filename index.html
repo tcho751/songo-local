@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Songo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #f0e8d8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 12px;
+      font-family: Georgia, serif;
+    }
+
+    h1 {
+      color: #5a2a08;
+      font-size: 34px;
+      font-weight: bold;
+      letter-spacing: 0.3em;
+      margin-bottom: 2px;
+    }
+
+    .sous-titre {
+      color: #a07040;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      margin-bottom: 22px;
+    }
+
+    /* ── Scores ── */
+    #scores {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .score-card {
+      background: #ffffff;
+      border: 1.5px solid #d4b090;
+      border-radius: 10px;
+      padding: 8px 22px;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .score-card.actif {
+      border: 2px solid #1D9E75;
+      background: #edfaf4;
+    }
+
+    .score-card .nom   { font-size: 11px; color: #a07040; margin-bottom: 2px; letter-spacing: 0.06em; }
+    .score-card .score { font-size: 26px; font-weight: bold; color: #5a2a08; }
+    .score-card .label { font-size: 10px; color: #b09070; }
+
+    /* ── Message ── */
+    #msg-etat {
+      background: #fff;
+      border: 1px solid #d4b090;
+      border-radius: 8px;
+      padding: 8px 28px;
+      color: #5a2a08;
+      font-size: 13px;
+      font-style: italic;
+      margin-bottom: 18px;
+      text-align: center;
+      min-height: 36px;
+      min-width: 460px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Plateau bois clair doré ── */
+    #plateau {
+      background: #c8a464;
+      border-radius: 22px;
+      padding: 20px 26px;
+      border: 5px solid #a07838;
+      box-shadow:
+        inset 0 2px 6px rgba(255,230,160,0.35),
+        inset 0 -2px 6px rgba(0,0,0,0.1),
+        0 6px 20px rgba(100,60,20,0.2);
+    }
+
+    .etiquette-joueur {
+      font-size: 11px;
+      font-weight: bold;
+      color: #5a2a08;
+      text-align: center;
+      margin: 6px 0;
+      letter-spacing: 0.15em;
+    }
+
+    .rangee {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      transition: filter 0.3s;
+    }
+
+    /* ── Cases ── */
+    .case {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      padding: 10px;
+      gap: 3px;
+      transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+      /* Couleur neutre par défaut (bois clair) */
+      background: radial-gradient(circle at 40% 35%, #fdf0d8, #f0d8a8);
+      border: 2.5px solid #c8963c;
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.12), 0 2px 5px rgba(180,130,40,0.15);
+    }
+
+    /* ── Rangée active : la rangée du joueur dont c'est le tour brille en bleu ── */
+    .rangee.active .case {
+      background: radial-gradient(circle at 40% 35%, #deeffe, #b8d8f8);
+      border: 2.5px solid #7ab0e0;
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.1), 0 2px 8px rgba(100,160,220,0.35);
+    }
+
+    /* Halo sur toute la rangée active */
+    .rangee.active {
+      filter: drop-shadow(0 0 10px rgba(55,138,221,0.45));
+    }
+
+    /* Hover uniquement sur les cases jouables (rangée active, non vides) */
+    .rangee.active .case:not(.vide):hover {
+      border-color: #378ADD;
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.08), 0 0 18px rgba(55,138,221,0.6);
+      transform: scale(1.06);
+    }
+
+    .case.vide    { cursor: default; opacity: 0.5; }
+    .case.adverse { cursor: default; }
+
+    /* Sélectionnée */
+    .case.selectionnee {
+      border-color: #1D9E75 !important;
+      background: radial-gradient(circle at 40% 35%, #d0f5e8, #a0e8cc) !important;
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.08), 0 0 22px rgba(29,158,117,0.6) !important;
+      transform: scale(1.09);
+    }
+
+    /* ── Graines ── */
+    .graine {
+      width: 14px;
+      height: 16px;
+      border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%;
+      background: radial-gradient(circle at 35% 28%, #b06820, #6a3208);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,180,80,0.2);
+      flex-shrink: 0;
+    }
+
+    .case.dense .graine {
+      width: 10px;
+      height: 12px;
+    }
+
+    .compteur {
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+    }
+
+    .case.j1 .compteur { color: rgba(120, 70, 10, 0.6); }
+    .case.j2 .compteur { color: rgba(30, 80, 160, 0.6); }
+
+    .case.j1 .num-case { color: rgba(140, 80, 10, 0.45); }
+    .case.j2 .num-case { color: rgba(40, 90, 170, 0.45); }
+
+    /* ── Séparateur ── */
+    .separateur {
+      height: 14px;
+      display: flex;
+      align-items: center;
+      padding: 0 4px;
+    }
+
+    .separateur hr {
+      width: 100%;
+      border: none;
+      border-top: 1.5px dashed rgba(120,70,20,0.35);
+    }
+
+    /* ── Bouton ── */
+    #boutons { margin-top: 18px; }
+
+    button {
+      background: #fff;
+      border: 1.5px solid #d4b090;
+      border-radius: 7px;
+      color: #7a3a10;
+      font-family: Georgia, serif;
+      font-size: 13px;
+      padding: 8px 24px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    button:hover {
+      border-color: #5a2a08;
+      background: #fdf0e0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>SONGO</h1>
+  <div class="sous-titre">jeu traditionnel Ekang</div>
+
+  <div id="scores">
+    <div class="score-card" id="card-j1">
+      <div class="nom">Joueur 1</div>
+      <div class="score" id="score-j1">0</div>
+      <div class="label">graines capturées</div>
+    </div>
+    <div class="score-card">
+      <div class="nom">En jeu</div>
+      <div class="score" id="total-jeu">70</div>
+      <div class="label">graines restantes</div>
+    </div>
+    <div class="score-card" id="card-j2">
+      <div class="nom">Joueur 2</div>
+      <div class="score" id="score-j2">0</div>
+      <div class="label">graines capturées</div>
+    </div>
+  </div>
+
+  <div id="msg-etat">Joueur 1 commence — choisissez une case.</div>
+
+  <div id="plateau">
+    <div class="etiquette-joueur">Joueur 2</div>
+    <div class="rangee" id="rangee-nord"></div>
+    <div class="separateur"><hr /></div>
+    <div class="rangee" id="rangee-sud"></div>
+    <div class="etiquette-joueur">Joueur 1</div>
+  </div>
+
+  <div id="boutons">
+    <button id="btn-reset">↺ Nouvelle partie</button>
+  </div>
+
+  <script src="songo.js"></script>
+  <script>
+    const jeu = new Jeu("Joueur 1", "Joueur 2");
+
+    const rangeeNord = document.getElementById('rangee-nord');
+    const rangeeSud  = document.getElementById('rangee-sud');
+    const msgEtat    = document.getElementById('msg-etat');
+    const scoreJ1El  = document.getElementById('score-j1');
+    const scoreJ2El  = document.getElementById('score-j2');
+    const totalJeuEl = document.getElementById('total-jeu');
+    const cardJ1     = document.getElementById('card-j1');
+    const cardJ2     = document.getElementById('card-j2');
+
+    let caseSelectionnee = null;
+
+    function creerGraines(nb) {
+      const frag = document.createDocumentFragment();
+      const afficher = Math.min(nb, 12);
+      for (let i = 0; i < afficher; i++) {
+        const g = document.createElement('div');
+        g.className = 'graine';
+        frag.appendChild(g);
+      }
+      return frag;
+    }
+
+    function creerDomCase(joueur, numero, graines, tourActuel) {
+      const div = document.createElement('div');
+      div.classList.add('case');
+      div.classList.add(joueur === 1 ? 'j1' : 'j2');
+
+      if (graines === 0)          div.classList.add('vide');
+      if (joueur !== tourActuel)  div.classList.add('adverse');
+      if (graines > 7)            div.classList.add('dense');
+
+      if (caseSelectionnee !== null && joueur === tourActuel && numero === caseSelectionnee)
+        div.classList.add('selectionnee');
+
+      div.appendChild(creerGraines(graines));
+
+      const cpt = document.createElement('span');
+      cpt.className = 'compteur';
+      cpt.textContent = graines;
+      div.appendChild(cpt);
+
+      if (joueur === tourActuel && graines > 0)
+        div.addEventListener('click', () => handleClic(joueur, numero));
+
+      return div;
+    }
+
+    function afficher() {
+      const etat = jeu.getEtat();
+      rangeeNord.innerHTML = '';
+      rangeeSud.innerHTML  = '';
+
+      for (let i = 0; i < 7; i++) {
+        const info = etat.casesJ2[i];
+        rangeeNord.appendChild(creerDomCase(2, info.numero, info.graines, etat.tour));
+      }
+
+      for (let i = 6; i >= 0; i--) {
+        const info = etat.casesJ1[i];
+        rangeeSud.appendChild(creerDomCase(1, info.numero, info.graines, etat.tour));
+      }
+
+      scoreJ1El.textContent  = etat.scoreJ1;
+      scoreJ2El.textContent  = etat.scoreJ2;
+      totalJeuEl.textContent = etat.totalJeu;
+      msgEtat.textContent    = etat.message;
+
+      // La rangée du joueur actif brille en bleu
+      rangeeNord.classList.toggle('active', etat.tour === 2);
+      rangeeSud.classList.toggle('active',  etat.tour === 1);
+
+      cardJ1.classList.toggle('actif', etat.tour === 1);
+      cardJ2.classList.toggle('actif', etat.tour === 2);
+    }
+
+    function handleClic(joueur, numero) {
+      if (jeu.partieTerminee) return;
+      caseSelectionnee = numero;
+      jeu.jouerCoup(numero);
+      caseSelectionnee = null;
+      afficher();
+    }
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      caseSelectionnee = null;
+      jeu.reinitialiser();
+      afficher();
+    });
+
+    afficher();
+  </script>
+</body>
+</html>
