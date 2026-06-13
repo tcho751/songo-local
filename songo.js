@@ -1,15 +1,11 @@
-// ============================================================
 //  SONGO — Classes POO  (Brique 2)
 //  Structure : Case → Plateau → Joueur → Jeu
-// ============================================================
 
-
-// ------------------------------------------------------------
 // CLASSE Case
 // Représente une case du plateau.
 // Une case appartient à un joueur (1 ou 2) et a un numéro (1 à 7).
 // Elle contient un certain nombre de graines.
-// ------------------------------------------------------------
+
 class Case {
   constructor(joueur, numero) {
     this.joueur  = joueur;   // 1 = SUD, 2 = NORD
@@ -46,12 +42,11 @@ class Case {
 }
 
 
-// ------------------------------------------------------------
 // CLASSE Plateau
 // Contient les 14 cases (7 par joueur) et gère la navigation.
 // La règle de navigation est : toujours vers la case 7,
 // dans son camp comme dans celui de l'adversaire.
-// ------------------------------------------------------------
+
 class Plateau {
   constructor() {
     // On crée 7 cases pour chaque joueur, numérotées 1 à 7
@@ -79,7 +74,6 @@ class Plateau {
     return this.totalGraines(joueur) === 0;
   }
 
-  // -------------------------------------------------------
   // NAVIGATION — cœur du plateau
   // Retourne la séquence ordonnée de cases à parcourir
   // à partir d'une case de départ (exclue), en allant
@@ -89,7 +83,7 @@ class Plateau {
   // caseDepart    : la Case d'où on a ramassé les graines
   // nbGraines     : nombre de graines à distribuer
   //                 (sert à savoir combien de cases générer)
-  // -------------------------------------------------------
+
   getSequenceDistribution(joueurCourant, caseDepart, nbGraines) {
     const sequence = [];
     let campActuel = joueurCourant;   // on commence dans son propre camp
@@ -131,11 +125,10 @@ class Plateau {
 }
 
 
-// ------------------------------------------------------------
 // CLASSE Joueur
 // Représente un joueur : son identifiant, son nom,
 // et ses graines capturées.
-// ------------------------------------------------------------
+
 class Joueur {
   constructor(id, nom) {
     this.id      = id;    // 1 ou 2
@@ -164,13 +157,13 @@ class Joueur {
 }
 
 
-// ------------------------------------------------------------
+
 // CLASSE Jeu
 // Orchestre la partie : tours, semaille, prises, règles spéciales.
 // C'est ici que toute la logique du Songo sera implémentée.
 // Pour l'instant : initialisation + sélection de case.
 // La semaille sera ajoutée en Brique 4.
-// ------------------------------------------------------------
+
 class Jeu {
   constructor(nomJ1 = "Joueur 1", nomJ2 = "Joueur 2") {
     this.plateau  = new Plateau();
@@ -178,6 +171,7 @@ class Jeu {
     this.tourActuel = 1;      // commence avec le joueur 1
     this.partieTerminee = false;
     this.messageEtat = `${nomJ1} commence. Choisissez une case.`;
+    this.derniereSequence = []; // séquence de la dernière semaille (pour animation)
   }
 
   // Retourne l'objet Joueur dont c'est le tour
@@ -214,6 +208,7 @@ class Jeu {
 
     if (caseChoisie.estVide()) {
       this.messageEtat = "Case vide. Choisissez une autre case.";
+      this.derniereSequence = [];
       return false;
     }
 
@@ -222,6 +217,7 @@ class Jeu {
       const coupValide = this._verifierSolidarite(numeroCase);
       if (!coupValide) {
         this.messageEtat = "Ce coup n'alimente pas assez le camp adverse. Choisissez une autre case.";
+        this.derniereSequence = [];
         return false;
       }
     }
@@ -258,12 +254,12 @@ class Jeu {
     return true;
   }
 
-  // ------------------------------------------------------------
+ 
   // _effectuerPrises(dernierCase)
   // Vérifie si la dernière case touchée déclenche une prise,
   // puis remonte la chaîne tant que la condition est remplie.
   // Retourne le nombre total de graines capturées.
-  // ------------------------------------------------------------
+
   _effectuerPrises(dernierCase) {
     if (!dernierCase) return 0;
 
@@ -324,14 +320,14 @@ class Jeu {
     return totalCapture;
   }
 
-  // ------------------------------------------------------------
+ 
   // _semer(caseChoisie)
   // Ramasse les graines de caseChoisie et les distribue une à une
   // en suivant la règle : toujours vers la case 7, dans son camp
   // puis dans le camp adverse, en boucle.
   //
   // Retourne la dernière Case touchée (utile pour les prises).
-  // ------------------------------------------------------------
+
   _semer(caseChoisie) {
     const joueur    = this.tourActuel;
     const adversaire = joueur === 1 ? 2 : 1;
@@ -363,22 +359,24 @@ class Jeu {
 
     // 3. Distribuer : une graine par case dans l'ordre
     let dernierCase = null;
+    this.derniereSequence = [];
     for (const c of sequence) {
       c.deposer();
       dernierCase = c;
+      this.derniereSequence.push({ joueur: c.joueur, numero: c.numero, graines: c.graines });
     }
 
     return dernierCase;
   }
 
-  // ------------------------------------------------------------
+
   // _sequenceTourComplet(caseDepart, nbGraines, joueur, adversaire)
   // Génère la séquence pour le cas > 13 graines :
   // - On fait un tour complet en sautant la case de départ
   // - Dès qu'on atteint le camp adverse pour la première fois,
   //   on y reste jusqu'à épuisement des graines (en repartant
   //   de la case 1 adverse si nécessaire)
-  // ------------------------------------------------------------
+ 
   _sequenceTourComplet(caseDepart, nbGraines, joueur, adversaire) {
     const sequence = [];
     let grainесRestantes = nbGraines;
@@ -443,11 +441,11 @@ class Jeu {
     this.partieTerminee = false;
     this.messageEtat = `${this.joueurs[0].nom} commence. Choisissez une case.`;
   }
-  // ============================================================
+ 
   // BRIQUE 6 — Règles spéciales
-  // ============================================================
 
-  // ------------------------------------------------------------
+
+  // 
   // _verifierSolidarite(numeroCase)
   // Appelée quand le camp adverse est vide.
   // Vérifie si le coup choisi envoie au moins 7 graines
@@ -455,7 +453,7 @@ class Jeu {
   // Si aucun coup du joueur ne peut envoyer 7 graines,
   // on accepte le coup qui envoie le maximum possible.
   // Retourne true si le coup est autorisé, false sinon.
-  // ------------------------------------------------------------
+  // 
   _verifierSolidarite(numeroCase) {
     const joueur     = this.tourActuel;
     const adversaire = joueur === 1 ? 2 : 1;
@@ -483,11 +481,11 @@ class Jeu {
     }
   }
 
-  // ------------------------------------------------------------
+ 
   // _simulerGrainesVersAdverse(joueur, numeroCase)
   // Simule la distribution sans modifier le plateau,
   // et retourne combien de graines atterriraient dans le camp adverse.
-  // ------------------------------------------------------------
+
   _simulerGrainesVersAdverse(joueur, numeroCase) {
     const adversaire  = joueur === 1 ? 2 : 1;
     const caseDepart  = this.plateau.getCase(joueur, numeroCase);
@@ -506,12 +504,12 @@ class Jeu {
     return sequence.filter(c => c.joueur === adversaire).length;
   }
 
-  // ------------------------------------------------------------
+
   // _appliquerInterditCase7(joueur, adversaire)
   // Si la case 7 a été jouée et qu'elle n'a envoyé que 1 ou 2
   // graines chez l'adversaire, ces graines lui sont données
   // directement sans distribution.
-  // ------------------------------------------------------------
+
   _appliquerInterditCase7(joueur, adversaire) {
     // Compter les graines qui viennent d'arriver dans le camp adverse
     // Ce sont les graines dans les cases 1 et 2 adverses qui viennent d'être touchées
@@ -524,7 +522,7 @@ class Jeu {
     // initialement 1 ou 2 graines (car si elle en avait 1 → 1 graine adverse,
     // si elle en avait 2 → 2 graines adverses, si ≥ 3 → au moins 3 donc pas d'interdit)
 
-    // Note : à ce stade la semaille est déjà effectuée.
+    // à ce stade la semaille est déjà effectuée.
     // On repère les graines en cases 1 et/ou 2 adverses qui viennent
     // d'y être déposées en vérifiant l'état actuel.
     // La règle dit : si ≤ 2 graines envoyées en camp adverse depuis case 7,
@@ -553,11 +551,11 @@ class Jeu {
     this._derniereCase7Graines = 0;
   }
 
-  // ------------------------------------------------------------
+
   // _verifierFinDePartie()
   // Vérifie les 3 conditions de fin après chaque coup.
   // Retourne true si la partie est terminée.
-  // ------------------------------------------------------------
+
   _verifierFinDePartie() {
     const j1 = this.joueurs[0];
     const j2 = this.joueurs[1];
@@ -612,10 +610,10 @@ class Jeu {
     return false;
   }
 
-  // ------------------------------------------------------------
+
   // _messageResultatFinal()
   // Construit le message de fin de partie selon les scores.
-  // ------------------------------------------------------------
+
   _messageResultatFinal() {
     const j1 = this.joueurs[0];
     const j2 = this.joueurs[1];
